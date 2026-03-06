@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Maps</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <div class="login-bg">
+        <svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <!-- Connection lines -->
+            <g stroke="rgba(74,158,255,0.08)" stroke-width="1" fill="none">
+                <line x1="120" y1="90" x2="340" y2="200"/>
+                <line x1="340" y1="200" x2="580" y2="150"/>
+                <line x1="340" y1="200" x2="290" y2="420"/>
+                <line x1="580" y1="150" x2="750" y2="300"/>
+                <line x1="290" y1="420" x2="500" y2="500"/>
+                <line x1="500" y1="500" x2="750" y2="300"/>
+                <line x1="750" y1="300" x2="950" y2="180"/>
+                <line x1="950" y1="180" x2="1150" y2="280"/>
+                <line x1="1150" y1="280" x2="1350" y2="150"/>
+                <line x1="1150" y1="280" x2="1100" y2="500"/>
+                <line x1="1350" y1="150" x2="1550" y2="250"/>
+                <line x1="1550" y1="250" x2="1750" y2="120"/>
+                <line x1="1100" y1="500" x2="1350" y2="600"/>
+                <line x1="500" y1="500" x2="650" y2="700"/>
+                <line x1="650" y1="700" x2="900" y2="750"/>
+                <line x1="900" y1="750" x2="1100" y2="500"/>
+                <line x1="900" y1="750" x2="1150" y2="850"/>
+                <line x1="1350" y1="600" x2="1550" y2="700"/>
+                <line x1="1550" y1="700" x2="1750" y2="600"/>
+                <line x1="1750" y1="600" x2="1800" y2="400"/>
+                <line x1="1800" y1="400" x2="1550" y2="250"/>
+                <line x1="120" y1="90" x2="80" y2="300"/>
+                <line x1="80" y1="300" x2="290" y2="420"/>
+                <line x1="650" y1="700" x2="400" y2="850"/>
+                <line x1="400" y1="850" x2="200" y2="750"/>
+                <line x1="1150" y1="850" x2="1400" y2="920"/>
+                <line x1="1400" y1="920" x2="1600" y2="850"/>
+                <line x1="1750" y1="120" x2="1850" y2="300"/>
+                <line x1="1850" y1="300" x2="1800" y2="400"/>
+            </g>
+            <!-- Dashed range circles -->
+            <g fill="none" stroke="rgba(74,158,255,0.04)" stroke-width="1" stroke-dasharray="4 6">
+                <circle cx="340" cy="200" r="80"/>
+                <circle cx="750" cy="300" r="100"/>
+                <circle cx="1150" cy="280" r="90"/>
+                <circle cx="900" cy="750" r="70"/>
+                <circle cx="1550" cy="250" r="85"/>
+                <circle cx="500" cy="500" r="60"/>
+            </g>
+            <!-- Node points (objects) -->
+            <g fill="rgba(74,158,255,0.25)">
+                <circle cx="120" cy="90" r="3"/>
+                <circle cx="340" cy="200" r="4"/>
+                <circle cx="580" cy="150" r="3"/>
+                <circle cx="290" cy="420" r="3.5"/>
+                <circle cx="750" cy="300" r="4.5"/>
+                <circle cx="500" cy="500" r="3.5"/>
+                <circle cx="950" cy="180" r="3"/>
+                <circle cx="1150" cy="280" r="4"/>
+                <circle cx="1350" cy="150" r="3"/>
+                <circle cx="1100" cy="500" r="3.5"/>
+                <circle cx="1550" cy="250" r="4"/>
+                <circle cx="1750" cy="120" r="3"/>
+                <circle cx="650" cy="700" r="3.5"/>
+                <circle cx="900" cy="750" r="4"/>
+                <circle cx="1350" cy="600" r="3"/>
+                <circle cx="1550" cy="700" r="3.5"/>
+                <circle cx="1750" cy="600" r="3"/>
+                <circle cx="1800" cy="400" r="3.5"/>
+                <circle cx="80" cy="300" r="3"/>
+                <circle cx="400" cy="850" r="3"/>
+                <circle cx="200" cy="750" r="3"/>
+                <circle cx="1150" cy="850" r="3.5"/>
+                <circle cx="1400" cy="920" r="3"/>
+                <circle cx="1600" cy="850" r="3"/>
+                <circle cx="1850" cy="300" r="3"/>
+            </g>
+            <!-- Highlighted key nodes -->
+            <g fill="none" stroke="rgba(74,158,255,0.12)" stroke-width="1">
+                <circle cx="340" cy="200" r="10"/>
+                <circle cx="750" cy="300" r="12"/>
+                <circle cx="1150" cy="280" r="11"/>
+                <circle cx="1550" cy="250" r="10"/>
+                <circle cx="900" cy="750" r="10"/>
+            </g>
+            <!-- Small tactical diamonds -->
+            <g fill="rgba(255,100,100,0.15)" stroke="rgba(255,100,100,0.1)" stroke-width="0.5">
+                <polygon points="340,190 350,200 340,210 330,200"/>
+                <polygon points="1150,270 1160,280 1150,290 1140,280"/>
+                <polygon points="750,290 760,300 750,310 740,300"/>
+            </g>
+            <!-- Pulse animation on key nodes -->
+            <g fill="rgba(74,158,255,0.08)">
+                <circle cx="340" cy="200" r="6"><animate attributeName="r" values="6;18;6" dur="4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.15;0;0.15" dur="4s" repeatCount="indefinite"/></circle>
+                <circle cx="1150" cy="280" r="6"><animate attributeName="r" values="6;16;6" dur="5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.12;0;0.12" dur="5s" repeatCount="indefinite"/></circle>
+                <circle cx="750" cy="300" r="6"><animate attributeName="r" values="6;20;6" dur="6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.1;0;0.1" dur="6s" repeatCount="indefinite"/></circle>
+            </g>
+        </svg>
+    </div>
+    <div class="login-card">
+        <h1>MAPS</h1>
+        <p class="subtitle">Войдите в систему</p>
+
+        {% if form.errors %}
+        <ul class="error-list">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_username">Логин</label>
+                <input type="text" name="username" id="id_username" autofocus required>
+            </div>
+            <div class="form-group">
+                <label for="id_password">Пароль</label>
+                <input type="password" name="password" id="id_password" required>
+            </div>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+</body>
+</html>

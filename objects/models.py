@@ -1,113 +1,6 @@
-from django.db import models
-
-
-class Country(models.Model):
-    name = models.CharField("Название", max_length=200)
-
-    class Meta:
-        verbose_name = "Страна"
-        verbose_name_plural = "Страны"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class GovOrg(models.Model):
-    name = models.CharField("Название", max_length=200)
-    description = models.TextField("Описание", blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Гос. орган"
-        verbose_name_plural = "Гос. органы"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class ForceType(models.Model):
-    name = models.CharField("Название", max_length=200)
-    description = models.TextField("Описание", blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Тип сил"
-        verbose_name_plural = "Типы сил"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class ForceKind(models.Model):
-    name = models.CharField("Название", max_length=200)
-    description = models.TextField("Описание", blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Вид сил"
-        verbose_name_plural = "Виды сил"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class Association(models.Model):
-    name = models.CharField("Название", max_length=200)
-    description = models.TextField("Описание", blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Ассоциация"
-        verbose_name_plural = "Ассоциации"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class Unit(models.Model):
-    name = models.CharField("Название", max_length=200)
-    description = models.TextField("Описание", blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Часть"
-        verbose_name_plural = "Части"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class Polygon(models.Model):
-    name = models.CharField("Название", max_length=200)
-    color = models.CharField("Цвет", max_length=50, blank=True, null=True)  # hex или название цвета
-
-    class Meta:
-        verbose_name = "Полигон"
-        verbose_name_plural = "Полигоны"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class PolygonPoint(models.Model):
-    polygon = models.ForeignKey(
-        Polygon,
-        on_delete=models.CASCADE,
-        related_name="points",
-        verbose_name="Полигон",
-    )
-    lat = models.FloatField("Широта")
-    lng = models.FloatField("Долгота")
-
-    class Meta:
-        verbose_name = "Точка полигона"
-        verbose_name_plural = "Точки полигона"
-        ordering = ["polygon", "id"]
-
-    def __str__(self):
-        return f"Точка полигона {self.polygon.name}"
+from django.contrib.gis.db import models
+from django.core.exceptions import ValidationError
+from references.models import Country, GovOrg, ForceType, ForceKind, Association, Unit
 
 
 class Object(models.Model):
@@ -163,15 +56,86 @@ class Object(models.Model):
     name = models.CharField("Название", max_length=300)
     short_name = models.CharField("Краткое название", max_length=100, blank=True, null=True)
 
-    latitude = models.FloatField("Широта")
-    longitude = models.FloatField("Долгота")
+    latitude = models.FloatField(
+        "Широта",
+        null=True,
+        blank=True,
+    )
+    longitude = models.FloatField(
+        "Долгота",
+        null=True,
+        blank=True,
+    )
 
     description = models.TextField("Описание", blank=True, null=True)
+
+    picture = models.ImageField('Изображение', blank=True, null=True)
+
+    geom = models.PolygonField(
+        verbose_name="Полигон",
+        srid=4326,
+        null=True,
+        blank=True,
+        geography=False
+    )
+
+    point = models.PointField(
+        verbose_name="Точка на карте",
+        srid=4326,
+        null=True,
+        blank=True,
+        geography=False
+    )
 
     class Meta:
         verbose_name = "Объект"
         verbose_name_plural = "Объекты"
         ordering = ["name"]
 
+    def clean(self):
+        has_latlon = self.latitude is not None and self.longitude is not None
+        has_point = self.point is not None
+        has_geom = self.geom is not None
+        filled = sum([has_latlon, has_point, has_geom])
+
+        if filled == 0:
+            raise ValidationError(
+                "Укажите геометрию: координаты (широта/долгота), точку на карте или полигон."
+            )
+
+        if filled > 1:
+            raise ValidationError(
+                "Можно задать только один вариант геометрии: "
+                "полигон, точку на карте или координаты (широта/долгота)."
+            )
+
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValidationError(
+                "Широта и долгота должны быть заполнены вместе."
+            )
+
+        if self.country_id:
+            ref_fields = [
+                ('gov_org', 'Гос. орган'),
+                ('type', 'Тип сил'),
+                ('kind', 'Вид сил'),
+                ('association', 'Ассоциация'),
+                ('unit', 'Часть'),
+            ]
+            for field, label in ref_fields:
+                ref = getattr(self, field)
+                if ref and ref.country_id and ref.country_id != self.country_id:
+                    raise ValidationError(
+                        f'{label} «{ref}» относится к другой стране.'
+                    )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.name
+        return self.name or self.short_name or f"Object #{self.pk}"
+
+    @property
+    def picture_url(self):
+        return self.picture.url

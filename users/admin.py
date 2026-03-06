@@ -4,13 +4,14 @@ from .models import User
 from django.utils.translation import gettext_lazy as _
 
 admin.site.site_header = 'Barey'
-EMPTY_VALUE_DISPLAY = '<пусто>'
+admin.site.empty_value_display = '<пусто>'
+
 
 @admin.register(User)
 class UserAdmin(UserAdmin):
-    """Панель настройки пользователей"""
     list_display = ["username", "email", "first_name",
                     "last_name", "last_login"]
+    list_display_links = ["username"]
     search_fields = ["username", "email", "first_name", "last_name"]
     list_filter = ["is_active", "is_staff", "is_superuser"]
     fieldsets = (
@@ -18,13 +19,13 @@ class UserAdmin(UserAdmin):
         (_("Личная информация"),
             {"fields":
                 ("last_name", "first_name", "email",)}),
-        (_("Permissions"),
+        (_("Права доступа"),
             {"fields":
                 ("is_active", "is_staff", "is_superuser",
                     "groups", "user_permissions")}),
-        (_("Important dates"),
+        (_("Важные даты"),
             {"fields":
-                ("last_login", "date_joined")})
+                ("last_login", "date_joined")}),
     )
     add_fieldsets = (
         (None, {
@@ -36,8 +37,6 @@ class UserAdmin(UserAdmin):
                 "password1",
                 "password2",
                 "email",
-                "work_phone",
-                "department"
             ),
         }),
     )
