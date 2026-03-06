@@ -1,6 +1,7 @@
 (function() {
     const FILTERS_URL = window.__FILTERS_URL;
     const MARKERS_URL = window.__MARKERS_URL;
+    const SEARCH_URL = window.__SEARCH_URL;
 
     // --- Map ---
     const map = L.map('map').setView([50.0, 30.0], 6);
@@ -21,8 +22,10 @@
         disableClusteringAtZoom: 18
     }).addTo(map);
     let allObjects = [];
+    let totalCount = 0;
     const hiddenIds = new Set();
     const hiddenObjects = {};
+    let fetchController = null;
 
     // --- Sidebar toggle ---
     const sidebar = document.getElementById('sidebar');
@@ -61,7 +64,7 @@
             if (k === 'country') {
                 reloadDependentFilters();
             } else {
-                applyFilters();
+                loadMarkers();
             }
         });
 
@@ -118,12 +121,11 @@
                 if (key === 'country') {
                     reloadDependentFilters();
                 } else {
-                    applyFilters();
+                    loadMarkers();
                 }
             });
             inner.appendChild(label);
         });
-        // Remove selected values that no longer exist in the new list
         const validIds = new Set(items.map(i => String(i.id)));
         for (const id of [...filterSelected[key]]) {
             if (!validIds.has(id)) filterSelected[key].delete(id);
@@ -142,8 +144,70 @@
                 dependentKeys.forEach(k => {
                     buildFilterOptions(k, data[k] || []);
                 });
-                applyFilters();
+                loadMarkers();
             });
+    }
+
+    // --- Server-side marker loading ---
+    function buildFilterParams() {
+        const params = new URLSearchParams();
+        filterKeys.forEach(k => {
+            if (filterSelected[k].size > 0) {
+                params.set(k, [...filterSelected[k]].join(','));
+            }
+        });
+        if (hiddenIds.size > 0) {
+            params.set('exclude', [...hiddenIds].join(','));
+        }
+        return params;
+    }
+
+    function loadMarkers() {
+        markersLayer.clearLayers();
+        if (!hasActiveFilters()) {
+            allObjects = [];
+            updateObjectCount(0);
+            return;
+        }
+
+        if (fetchController) fetchController.abort();
+        fetchController = new AbortController();
+
+        const params = buildFilterParams();
+        fetch(MARKERS_URL + '?' + params.toString(), { signal: fetchController.signal })
+            .then(r => r.json())
+            .then(data => {
+                totalCount = data.total;
+                allObjects = data.objects;
+                renderMarkers();
+            })
+            .catch(e => {
+                if (e.name !== 'AbortError') console.error(e);
+            });
+    }
+
+    function renderMarkers() {
+        markersLayer.clearLayers();
+        const markers = [];
+        allObjects.forEach(obj => {
+            const tooltip = obj.name || 'Без названия';
+            const popup = buildPopup(obj);
+
+            if (obj.lat != null && obj.lng != null) {
+                const m = L.marker([obj.lat, obj.lng]);
+                m.bindTooltip(tooltip);
+                m.bindPopup(popup);
+                markers.push(m);
+            } else if (obj.geom) {
+                L.geoJSON(JSON.parse(obj.geom)).eachLayer(l => {
+                    l.bindTooltip(tooltip);
+                    l.bindPopup(popup);
+                    markers.push(l);
+                });
+            }
+        });
+        markersLayer.addLayers(markers);
+        updateObjectCount(markers.length);
     }
 
     function buildPopup(obj) {
@@ -176,14 +240,14 @@
         hiddenIds.add(id);
         hiddenObjects[id] = obj;
         map.closePopup();
-        applyFilters();
+        loadMarkers();
         renderHiddenPanel();
     };
 
     window._showObject = function(id) {
         hiddenIds.delete(id);
         delete hiddenObjects[id];
-        applyFilters();
+        loadMarkers();
         renderHiddenPanel();
     };
 
@@ -208,44 +272,13 @@
 
     function updateObjectCount(shown) {
         if (shown > 0) {
-            objectCountEl.textContent = '(' + shown + ' из ' + allObjects.length + ')';
+            objectCountEl.textContent = '(' + shown + ' из ' + totalCount + ')';
         } else {
             objectCountEl.textContent = '';
         }
     }
 
-    function applyFilters() {
-        markersLayer.clearLayers();
-        if (!hasActiveFilters()) { updateObjectCount(0); return; }
-
-        const markers = [];
-        allObjects.forEach(obj => {
-            if (hiddenIds.has(obj.id)) return;
-            for (const k of filterKeys) {
-                if (filterSelected[k].size > 0 && !filterSelected[k].has(String(obj[k]))) return;
-            }
-
-            const tooltip = obj.name || 'Без названия';
-            const popup = buildPopup(obj);
-
-            if (obj.lat != null && obj.lng != null) {
-                const m = L.marker([obj.lat, obj.lng]);
-                m.bindTooltip(tooltip);
-                m.bindPopup(popup);
-                markers.push(m);
-            } else if (obj.geom) {
-                L.geoJSON(JSON.parse(obj.geom)).eachLayer(l => {
-                    l.bindTooltip(tooltip);
-                    l.bindPopup(popup);
-                    markers.push(l);
-                });
-            }
-        });
-        markersLayer.addLayers(markers);
-        updateObjectCount(markers.length);
-    }
-
-    // --- Load data ---
+    // --- Load initial filter options ---
     fetch(FILTERS_URL)
         .then(r => r.json())
         .then(data => {
@@ -254,11 +287,7 @@
             });
         });
 
-    fetch(MARKERS_URL)
-        .then(r => r.json())
-        .then(data => { allObjects = data; });
-
-    // --- Object search ---
+    // --- Object search (server-side) ---
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
     const searchClear = document.getElementById('search-clear');
@@ -275,7 +304,7 @@
 
     searchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
-        const query = searchInput.value.trim().toLowerCase();
+        const query = searchInput.value.trim();
         searchClear.classList.toggle('visible', searchInput.value.length > 0);
         if (query.length < 2) {
             searchResults.style.display = 'none';
@@ -283,41 +312,41 @@
             return;
         }
         searchTimeout = setTimeout(() => {
-            const matches = allObjects.filter(o =>
-                (o.name && o.name.toLowerCase().includes(query))
-            ).slice(0, 20);
-
-            searchResults.innerHTML = '';
-            if (matches.length === 0) {
-                searchResults.innerHTML = '<div class="search-no-results">Ничего не найдено</div>';
-            } else {
-                matches.forEach(obj => {
-                    const div = document.createElement('div');
-                    div.className = 'search-item';
-                    div.innerHTML = '<div>' + (obj.name || 'Без названия') + '</div>' +
-                        (obj.country_name ? '<div class="search-item-sub">' + obj.country_name + '</div>' : '');
-                    div.addEventListener('click', () => {
-                        searchMarkerLayer.clearLayers();
-                        const popup = buildPopup(obj);
-                        if (obj.lat != null && obj.lng != null) {
-                            const m = L.marker([obj.lat, obj.lng]).addTo(searchMarkerLayer);
-                            m.bindPopup(popup).openPopup();
-                            map.setView([obj.lat, obj.lng], 14);
-                        } else if (obj.geom) {
-                            const layer = L.geoJSON(JSON.parse(obj.geom), {
-                                style: { color: '#ff6b6b', weight: 3 }
-                            }).addTo(searchMarkerLayer);
-                            layer.bindPopup(popup).openPopup();
-                            map.fitBounds(layer.getBounds());
-                        }
-                        searchResults.style.display = 'none';
-                        searchInput.value = obj.name || '';
-                    });
-                    searchResults.appendChild(div);
+            fetch(SEARCH_URL + '?q=' + encodeURIComponent(query))
+                .then(r => r.json())
+                .then(matches => {
+                    searchResults.innerHTML = '';
+                    if (matches.length === 0) {
+                        searchResults.innerHTML = '<div class="search-no-results">Ничего не найдено</div>';
+                    } else {
+                        matches.forEach(obj => {
+                            const div = document.createElement('div');
+                            div.className = 'search-item';
+                            div.innerHTML = '<div>' + (obj.name || 'Без названия') + '</div>' +
+                                (obj.country_name ? '<div class="search-item-sub">' + obj.country_name + '</div>' : '');
+                            div.addEventListener('click', () => {
+                                searchMarkerLayer.clearLayers();
+                                const popup = buildPopup(obj);
+                                if (obj.lat != null && obj.lng != null) {
+                                    const m = L.marker([obj.lat, obj.lng]).addTo(searchMarkerLayer);
+                                    m.bindPopup(popup).openPopup();
+                                    map.setView([obj.lat, obj.lng], 14);
+                                } else if (obj.geom) {
+                                    const layer = L.geoJSON(JSON.parse(obj.geom), {
+                                        style: { color: '#ff6b6b', weight: 3 }
+                                    }).addTo(searchMarkerLayer);
+                                    layer.bindPopup(popup).openPopup();
+                                    map.fitBounds(layer.getBounds());
+                                }
+                                searchResults.style.display = 'none';
+                                searchInput.value = obj.name || '';
+                            });
+                            searchResults.appendChild(div);
+                        });
+                    }
+                    searchResults.style.display = 'block';
                 });
-            }
-            searchResults.style.display = 'block';
-        }, 200);
+        }, 300);
     });
 
     document.addEventListener('click', (e) => {
@@ -327,26 +356,14 @@
     });
 
     // --- Export ---
-    function getFilteredObjects() {
-        if (!hasActiveFilters()) return [];
-        return allObjects.filter(obj => {
-            if (hiddenIds.has(obj.id)) return false;
-            for (const k of filterKeys) {
-                if (filterSelected[k].size > 0 && !filterSelected[k].has(String(obj[k]))) return false;
-            }
-            return true;
-        });
-    }
-
     document.getElementById('btn-export').addEventListener('click', () => {
-        const objects = getFilteredObjects();
-        if (objects.length === 0) {
+        if (allObjects.length === 0) {
             alert('Нет объектов для экспорта. Выберите фильтры.');
             return;
         }
         const format = document.getElementById('export-format').value;
         const headers = ['Название', 'Страна', 'Гос. орган', 'Тип сил', 'Вид сил', 'Ассоциация', 'Часть', 'Широта', 'Долгота', 'Описание'];
-        const rows = objects.map(o => {
+        const rows = allObjects.map(o => {
             let lat = o.lat, lng = o.lng;
             if (lat == null && lng == null && o.geom) {
                 const bounds = L.geoJSON(JSON.parse(o.geom)).getBounds();
@@ -405,7 +422,7 @@
     document.getElementById('btn-show-all').addEventListener('click', () => {
         hiddenIds.clear();
         Object.keys(hiddenObjects).forEach(k => delete hiddenObjects[k]);
-        applyFilters();
+        loadMarkers();
         renderHiddenPanel();
     });
 })();

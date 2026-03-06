@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 
@@ -11,14 +12,9 @@ def map_view(request):
     return render(request, 'index.html')
 
 
-@login_required
-def api_markers(request):
-    objects = Object.objects.select_related(
-        'country', 'gov_org', 'type', 'kind', 'association', 'unit'
-    ).all()
-
+def _serialize_objects(qs):
     data = []
-    for obj in objects:
+    for obj in qs:
         lat, lng = None, None
         geom_json = None
 
@@ -49,8 +45,60 @@ def api_markers(request):
             'association_name': str(obj.association) if obj.association else '',
             'unit_name': str(obj.unit) if obj.unit else '',
         })
+    return data
 
-    return JsonResponse(data, safe=False)
+
+def _parse_ids(param):
+    if not param:
+        return []
+    return [int(x) for x in param.split(',') if x.strip().isdigit()]
+
+
+@login_required
+def api_markers(request):
+    qs = Object.objects.select_related(
+        'country', 'gov_org', 'type', 'kind', 'association', 'unit'
+    )
+
+    filter_map = {
+        'country': 'country_id__in',
+        'gov_org': 'gov_org_id__in',
+        'type': 'type_id__in',
+        'kind': 'kind_id__in',
+        'association': 'association_id__in',
+        'unit': 'unit_id__in',
+    }
+
+    has_filters = False
+    for param, lookup in filter_map.items():
+        ids = _parse_ids(request.GET.get(param))
+        if ids:
+            qs = qs.filter(**{lookup: ids})
+            has_filters = True
+
+    if not has_filters:
+        return JsonResponse({'objects': [], 'total': Object.objects.count()})
+
+    exclude = _parse_ids(request.GET.get('exclude'))
+    if exclude:
+        qs = qs.exclude(pk__in=exclude)
+
+    total = Object.objects.count()
+    data = _serialize_objects(qs)
+    return JsonResponse({'objects': data, 'total': total})
+
+
+@login_required
+def api_search(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse([], safe=False)
+
+    qs = Object.objects.select_related(
+        'country', 'gov_org', 'type', 'kind', 'association', 'unit'
+    ).filter(name__icontains=q)[:20]
+
+    return JsonResponse(_serialize_objects(qs), safe=False)
 
 
 @login_required
@@ -60,8 +108,7 @@ def api_filters(request):
 
     country_ids = request.GET.get('country')
     if country_ids:
-        ids = [int(x) for x in country_ids.split(',') if x.strip().isdigit()]
-        from django.db.models import Q
+        ids = _parse_ids(country_ids)
         country_filter = Q(country_id__in=ids) | Q(country__isnull=True)
         return JsonResponse({
             'country': qs_to_list(Country.objects.all()),
