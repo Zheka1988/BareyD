@@ -10,10 +10,32 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1')
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost',
-    'http://127.0.0.1'
+    'http://127.0.0.1',
+    'https://localhost',
+    'https://127.0.0.1',
 ]
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'https://localhost',
+    'https://127.0.0.1',
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 3600
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 INSTALLED_APPS = [
     'dal',
@@ -30,6 +52,7 @@ INSTALLED_APPS = [
     'references',
     'objects',
     'users',
+    'auditlog',
 ]
 
 MIDDLEWARE = [
@@ -40,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'auditlog.middleware.AuditLogMiddleware',
 ]
 
 ROOT_URLCONF = 'BareyD.urls'

@@ -26,12 +26,29 @@ services:
       - media_files:/app/media
     restart: unless-stopped
 
+  scheduler:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DB_PORT=5432
+    depends_on:
+      - db
+    restart: unless-stopped
+    command: >
+      bash -c "while true; do
+        python manage.py clean_old_logs;
+        sleep 86400;
+      done"
+
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - static_files:/app/staticfiles:ro
       - media_files:/app/media:ro
     depends_on:

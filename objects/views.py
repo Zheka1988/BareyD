@@ -3,12 +3,15 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from auditlog.models import AuditLog
+from auditlog.utils import log_action
 from objects.models import Object
 from references.models import Country, GovOrg, ForceType, ForceKind, Association, Unit
 
 
 @login_required
 def map_view(request):
+    log_action(request, AuditLog.Action.VIEW, 'Просмотр карты')
     return render(request, 'index.html')
 
 
@@ -83,6 +86,9 @@ def api_markers(request):
     if exclude:
         qs = qs.exclude(pk__in=exclude)
 
+    active = {p: request.GET.get(p) for p in filter_map if request.GET.get(p)}
+    log_action(request, AuditLog.Action.FILTER, f'Фильтрация: {active}')
+
     total = Object.objects.count()
     data = _serialize_objects(qs)
     return JsonResponse({'objects': data, 'total': total})
@@ -98,6 +104,7 @@ def api_search(request):
         'country', 'gov_org', 'type', 'kind', 'association', 'unit'
     ).filter(name__icontains=q)[:20]
 
+    log_action(request, AuditLog.Action.SEARCH, f'Поиск: {q}')
     return JsonResponse(_serialize_objects(qs), safe=False)
 
 
@@ -127,3 +134,11 @@ def api_filters(request):
         'association': qs_to_list(Association.objects.all()),
         'unit': qs_to_list(Unit.objects.all()),
     })
+
+
+@login_required
+def api_log_export(request):
+    fmt = request.GET.get('format', '?')
+    count = request.GET.get('count', '?')
+    log_action(request, AuditLog.Action.EXPORT, f'Экспорт {count} объектов в {fmt}')
+    return JsonResponse({'ok': True})

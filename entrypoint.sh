@@ -11,6 +11,8 @@ python manage.py migrate --noinput
 
 python manage.py createsuperuser --noinput 2>/dev/null || true
 
+python manage.py clean_old_logs
+
 gunicorn BareyD.wsgi:application \
   --bind 0.0.0.0:8000 \
   --workers 3 \

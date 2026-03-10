@@ -2,6 +2,7 @@
     const FILTERS_URL = window.__FILTERS_URL;
     const MARKERS_URL = window.__MARKERS_URL;
     const SEARCH_URL = window.__SEARCH_URL;
+    const LOG_EXPORT_URL = window.__LOG_EXPORT_URL;
 
     // --- Map ---
     const map = L.map('map').setView([50.0, 30.0], 6);
@@ -378,6 +379,8 @@
                 o.description || ''
             ];
         });
+
+        fetch(`${LOG_EXPORT_URL}?format=${format}&count=${allObjects.length}`).catch(() => {});
 
         if (format === 'csv') {
             const escape = v => '"' + String(v).replace(/"/g, '""') + '"';
