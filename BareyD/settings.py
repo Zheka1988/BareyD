@@ -37,6 +37,14 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+RATELIMIT_VIEW = 'BareyD.views.ratelimited'
+
 INSTALLED_APPS = [
     'dal',
     'dal_select2',

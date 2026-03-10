@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
+from django_ratelimit.decorators import ratelimit
 
 from auditlog.models import AuditLog
 from auditlog.utils import log_action
@@ -58,6 +59,7 @@ def _parse_ids(param):
 
 
 @login_required
+@ratelimit(key='user', rate='60/m', block=True)
 def api_markers(request):
     qs = Object.objects.select_related(
         'country', 'gov_org', 'type', 'kind', 'association', 'unit'
@@ -95,6 +97,7 @@ def api_markers(request):
 
 
 @login_required
+@ratelimit(key='user', rate='30/m', block=True)
 def api_search(request):
     q = request.GET.get('q', '').strip()[:100]
     if len(q) < 2:
@@ -109,6 +112,7 @@ def api_search(request):
 
 
 @login_required
+@ratelimit(key='user', rate='60/m', block=True)
 def api_filters(request):
     def qs_to_list(qs):
         return list(qs.values('id', 'name'))
