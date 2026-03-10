@@ -4,6 +4,11 @@
     const SEARCH_URL = window.__SEARCH_URL;
     const LOG_EXPORT_URL = window.__LOG_EXPORT_URL;
 
+    function esc(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // --- Map ---
     const map = L.map('map').setView([50.0, 30.0], 6);
     window.__map = map;
@@ -111,7 +116,7 @@
             const label = document.createElement('label');
             label.className = 'filter-option';
             const checked = filterSelected[key].has(String(item.id));
-            label.innerHTML = '<input type="checkbox" value="' + item.id + '"' + (checked ? ' checked' : '') + '> ' + item.name;
+            label.innerHTML = '<input type="checkbox" value="' + item.id + '"' + (checked ? ' checked' : '') + '> ' + esc(item.name);
             label.querySelector('input').addEventListener('change', (e) => {
                 if (e.target.checked) {
                     filterSelected[key].add(String(item.id));
@@ -213,7 +218,7 @@
 
     function buildPopup(obj) {
         let html = '<div class="marker-popup">';
-        html += '<b>' + (obj.name || 'Без названия') + '</b>';
+        html += '<b>' + esc(obj.name || 'Без названия') + '</b>';
         const fields = [
             ['Страна', obj.country_name],
             ['Гос. орган', obj.gov_org_name],
@@ -223,9 +228,9 @@
             ['Часть', obj.unit_name],
         ];
         fields.forEach(([label, value]) => {
-            if (value) html += '<br><span style="color:#888">' + label + ':</span> ' + value;
+            if (value) html += '<br><span style="color:#888">' + esc(label) + ':</span> ' + esc(value);
         });
-        if (obj.description) html += '<br><br>' + obj.description;
+        if (obj.description) html += '<br><br>' + esc(obj.description);
         html += '<br><button class="popup-hide-btn" onclick="window._hideObject(' + obj.id + ')">Скрыть</button>';
         html += '</div>';
         return html;
@@ -263,7 +268,7 @@
             const obj = hiddenObjects[id];
             const item = document.createElement('div');
             item.className = 'hidden-item';
-            item.innerHTML = '<span class="hidden-item-name">' + (obj.name || 'Без названия') + '</span>' +
+            item.innerHTML = '<span class="hidden-item-name">' + esc(obj.name || 'Без названия') + '</span>' +
                 '<button class="hidden-item-show" onclick="window._showObject(' + id + ')" title="Показать">&times;</button>';
             hiddenList.appendChild(item);
         }
@@ -323,8 +328,8 @@
                         matches.forEach(obj => {
                             const div = document.createElement('div');
                             div.className = 'search-item';
-                            div.innerHTML = '<div>' + (obj.name || 'Без названия') + '</div>' +
-                                (obj.country_name ? '<div class="search-item-sub">' + obj.country_name + '</div>' : '');
+                            div.innerHTML = '<div>' + esc(obj.name || 'Без названия') + '</div>' +
+                                (obj.country_name ? '<div class="search-item-sub">' + esc(obj.country_name) + '</div>' : '');
                             div.addEventListener('click', () => {
                                 searchMarkerLayer.clearLayers();
                                 const popup = buildPopup(obj);
