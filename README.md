@@ -116,6 +116,32 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 - Поиск, фильтрация, экспорт
 - Автоочистка записей старше 90 дней
 
+## Тесты
+
+Запуск всех тестов:
+
+```bash
+docker compose exec web python manage.py test tests --settings=tests.settings
+```
+
+Запуск конкретного модуля:
+
+```bash
+docker compose exec web python manage.py test tests.test_auth --settings=tests.settings
+docker compose exec web python manage.py test tests.test_models --settings=tests.settings
+docker compose exec web python manage.py test tests.test_api --settings=tests.settings
+docker compose exec web python manage.py test tests.test_audit --settings=tests.settings
+docker compose exec web python manage.py test tests.test_security --settings=tests.settings
+```
+
+| Модуль | Что проверяет |
+|--------|--------------|
+| `test_auth` | Вход, выход, неверный пароль, доступ без авторизации, аудит-логи входа |
+| `test_models` | Валидация Object (геометрия, страна), справочники, каскадное удаление |
+| `test_api` | API маркеров, поиска, фильтров, экспорта — параметры, ответы, сериализация |
+| `test_audit` | Логирование CRUD, просмотра, автоочистка старых записей |
+| `test_security` | CSRF-защита, XSS, SQL-инъекции, валидация входных данных |
+
 ## Обновление статики
 
 При изменении JS, CSS или других статических файлов необходимо пересобрать статику внутри контейнера:
