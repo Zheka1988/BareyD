@@ -96,7 +96,7 @@ def api_markers(request):
 
 @login_required
 def api_search(request):
-    q = request.GET.get('q', '').strip()
+    q = request.GET.get('q', '').strip()[:100]
     if len(q) < 2:
         return JsonResponse([], safe=False)
 
