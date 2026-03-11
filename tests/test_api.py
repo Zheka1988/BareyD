@@ -77,15 +77,6 @@ class ApiMarkersTest(ApiTestBase):
         self.assertEqual(len(data['objects']), 1)
         self.assertEqual(data['objects'][0]['name'], 'Объект Альфа')
 
-    def test_exclude_param(self):
-        response = self.client.get(
-            reverse('objects:api_markers'),
-            {'country': str(self.country.pk), 'exclude': str(self.obj1.pk)},
-        )
-        data = json.loads(response.content)
-        ids = [o['id'] for o in data['objects']]
-        self.assertNotIn(self.obj1.pk, ids)
-
     def test_serialization_coordinates(self):
         response = self.client.get(
             reverse('objects:api_markers'),

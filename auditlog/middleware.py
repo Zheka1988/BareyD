@@ -15,6 +15,8 @@ class AuditLogMiddleware:
 
     def __call__(self, request):
         _request_local.request = request
-        response = self.get_response(request)
-        _request_local.request = None
-        return response
+        try:
+            response = self.get_response(request)
+            return response
+        finally:
+            _request_local.request = None

@@ -162,9 +162,6 @@
                 params.set(k, [...filterSelected[k]].join(','));
             }
         });
-        if (hiddenIds.size > 0) {
-            params.set('exclude', [...hiddenIds].join(','));
-        }
         return params;
     }
 
@@ -195,7 +192,7 @@
     function renderMarkers() {
         markersLayer.clearLayers();
         const markers = [];
-        allObjects.forEach(obj => {
+        allObjects.filter(obj => !hiddenIds.has(obj.id)).forEach(obj => {
             const tooltip = obj.name || 'Без названия';
             const popup = buildPopup(obj);
 
@@ -246,14 +243,14 @@
         hiddenIds.add(id);
         hiddenObjects[id] = obj;
         map.closePopup();
-        loadMarkers();
+        renderMarkers();
         renderHiddenPanel();
     };
 
     window._showObject = function(id) {
         hiddenIds.delete(id);
         delete hiddenObjects[id];
-        loadMarkers();
+        renderMarkers();
         renderHiddenPanel();
     };
 
@@ -430,7 +427,7 @@
     document.getElementById('btn-show-all').addEventListener('click', () => {
         hiddenIds.clear();
         Object.keys(hiddenObjects).forEach(k => delete hiddenObjects[k]);
-        loadMarkers();
+        renderMarkers();
         renderHiddenPanel();
     });
 })();

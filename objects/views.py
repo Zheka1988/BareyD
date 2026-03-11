@@ -84,10 +84,6 @@ def api_markers(request):
     if not has_filters:
         return JsonResponse({'objects': [], 'total': Object.objects.count()})
 
-    exclude = _parse_ids(request.GET.get('exclude'))
-    if exclude:
-        qs = qs.exclude(pk__in=exclude)
-
     active = {p: request.GET.get(p) for p in filter_map if request.GET.get(p)}
     log_action(request, AuditLog.Action.FILTER, f'Фильтрация: {active}')
 
