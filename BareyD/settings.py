@@ -8,14 +8,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1')
 
+SERVER_IP = os.getenv('SERVER_IP', '127.0.0.1')
+DOMAIN_NAME = os.getenv('DOMAIN_NAME', 'localhost')
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+if SERVER_IP not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(SERVER_IP)
+if DOMAIN_NAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(DOMAIN_NAME)
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost',
     'http://127.0.0.1',
     'https://localhost',
     'https://127.0.0.1',
 ]
-
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+if SERVER_IP not in ('127.0.0.1', 'localhost'):
+    CORS_ALLOWED_ORIGINS += [f'http://{SERVER_IP}', f'https://{SERVER_IP}']
+if DOMAIN_NAME not in ('127.0.0.1', 'localhost'):
+    CORS_ALLOWED_ORIGINS += [f'http://{DOMAIN_NAME}', f'https://{DOMAIN_NAME}']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost',
@@ -23,6 +34,10 @@ CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'https://127.0.0.1',
 ]
+if SERVER_IP not in ('127.0.0.1', 'localhost'):
+    CSRF_TRUSTED_ORIGINS += [f'http://{SERVER_IP}', f'https://{SERVER_IP}']
+if DOMAIN_NAME not in ('127.0.0.1', 'localhost'):
+    CSRF_TRUSTED_ORIGINS += [f'http://{DOMAIN_NAME}', f'https://{DOMAIN_NAME}']
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
@@ -39,7 +54,8 @@ if not DEBUG:
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/0'),
     }
 }
 
