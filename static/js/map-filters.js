@@ -155,33 +155,17 @@
             });
     }
 
-    window.__renderMarkers = function() {
-        markersLayer.clearLayers();
-        const markers = [];
-        window.__allObjects.filter(obj => !window.__hiddenIds.has(obj.id)).forEach(obj => {
-            const tooltip = obj.name || 'Без названия';
-            const popup = window.__buildPopup(obj);
+    // --- Object detail panel ---
+    const detailPanel = document.getElementById('object-detail');
+    const detailBody = document.getElementById('object-detail-body');
+    const detailActions = document.getElementById('object-detail-actions');
 
-            if (obj.lat != null && obj.lng != null) {
-                const m = L.marker([obj.lat, obj.lng]);
-                m.bindTooltip(tooltip);
-                m.bindPopup(popup);
-                markers.push(m);
-            } else if (obj.geom) {
-                L.geoJSON(JSON.parse(obj.geom)).eachLayer(l => {
-                    l.bindTooltip(tooltip);
-                    l.bindPopup(popup);
-                    markers.push(l);
-                });
-            }
-        });
-        markersLayer.addLayers(markers);
-        updateObjectCount(markers.length);
-    };
+    document.getElementById('object-detail-close').addEventListener('click', () => {
+        detailPanel.style.display = 'none';
+    });
 
-    window.__buildPopup = function(obj) {
-        let html = '<div class="marker-popup">';
-        html += '<b>' + esc(obj.name || 'Без названия') + '</b>';
+    window.__showObjectDetail = function(obj) {
+        let html = '<div class="detail-name">' + esc(obj.name || 'Без названия') + '</div>';
         const fields = [
             ['Страна', obj.country_name],
             ['Гос. орган', obj.gov_org_name],
@@ -191,12 +175,43 @@
             ['Часть', obj.unit_name],
         ];
         fields.forEach(([label, value]) => {
-            if (value) html += '<br><span style="color:#888">' + esc(label) + ':</span> ' + esc(value);
+            if (value) {
+                html += '<div class="detail-field"><span class="detail-label">' + esc(label) + ':</span> <span class="detail-value">' + esc(value) + '</span></div>';
+            }
         });
-        if (obj.description) html += '<br><br>' + esc(obj.description);
-        html += '<br><button class="popup-hide-btn" onclick="window._hideObject(' + obj.id + ')">Скрыть</button>';
-        html += '</div>';
-        return html;
+        if (obj.description) {
+            html += '<div class="detail-desc">' + esc(obj.description) + '</div>';
+        }
+        detailBody.innerHTML = html;
+        detailActions.innerHTML = '<button class="detail-hide-btn">Скрыть объект</button>';
+        detailActions.querySelector('.detail-hide-btn').addEventListener('click', () => {
+            window._hideObject(obj.id);
+            detailPanel.style.display = 'none';
+        });
+        detailPanel.style.display = 'block';
+    };
+
+    window.__renderMarkers = function() {
+        markersLayer.clearLayers();
+        const markers = [];
+        window.__allObjects.filter(obj => !window.__hiddenIds.has(obj.id)).forEach(obj => {
+            const tooltip = obj.name || 'Без названия';
+
+            if (obj.lat != null && obj.lng != null) {
+                const m = L.marker([obj.lat, obj.lng]);
+                m.bindTooltip(tooltip);
+                m.on('click', () => window.__showObjectDetail(obj));
+                markers.push(m);
+            } else if (obj.geom) {
+                L.geoJSON(JSON.parse(obj.geom)).eachLayer(l => {
+                    l.bindTooltip(tooltip);
+                    l.on('click', () => window.__showObjectDetail(obj));
+                    markers.push(l);
+                });
+            }
+        });
+        markersLayer.addLayers(markers);
+        updateObjectCount(markers.length);
     };
 
     const objectCountEl = document.getElementById('object-count');
@@ -256,18 +271,16 @@
                                 (obj.country_name ? '<div class="search-item-sub">' + esc(obj.country_name) + '</div>' : '');
                             div.addEventListener('click', () => {
                                 searchMarkerLayer.clearLayers();
-                                const popup = window.__buildPopup(obj);
                                 if (obj.lat != null && obj.lng != null) {
-                                    const m = L.marker([obj.lat, obj.lng]).addTo(searchMarkerLayer);
-                                    m.bindPopup(popup).openPopup();
+                                    L.marker([obj.lat, obj.lng]).addTo(searchMarkerLayer);
                                     map.setView([obj.lat, obj.lng], 14);
                                 } else if (obj.geom) {
                                     const layer = L.geoJSON(JSON.parse(obj.geom), {
                                         style: { color: '#ff6b6b', weight: 3 }
                                     }).addTo(searchMarkerLayer);
-                                    layer.bindPopup(popup).openPopup();
                                     map.fitBounds(layer.getBounds());
                                 }
+                                window.__showObjectDetail(obj);
                                 searchResults.style.display = 'none';
                                 searchInput.value = obj.name || '';
                             });
