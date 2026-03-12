@@ -197,6 +197,10 @@
     window.__SEARCH_URL = '{% url "objects:api_search" %}';
     window.__LOG_EXPORT_URL = '{% url "objects:api_log_export" %}';
 </script>
-<script src="{% static 'js/map.js' %}"></script>
+<script src="{% static 'js/map-init.js' %}"></script>
+<script src="{% static 'js/map-scale.js' %}"></script>
+<script src="{% static 'js/map-filters.js' %}"></script>
+<script src="{% static 'js/map-hidden.js' %}"></script>
+<script src="{% static 'js/map-export.js' %}"></script>
 <script src="{% static 'js/tools.js' %}"></script>
 {% endblock %}

@@ -1,51 +1,14 @@
 (function() {
+    const map = window.__map;
+    if (!map) return;
+
     const FILTERS_URL = window.__FILTERS_URL;
     const MARKERS_URL = window.__MARKERS_URL;
     const SEARCH_URL = window.__SEARCH_URL;
-    const LOG_EXPORT_URL = window.__LOG_EXPORT_URL;
+    const esc = window.__esc;
 
-    function esc(str) {
-        if (!str) return '';
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    // --- Map ---
-    const map = L.map('map').setView([50.0, 30.0], 6);
-    window.__map = map;
-    // Online: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
-    L.tileLayer('/tiles/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        tms: true,
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-
-    new L.Control.MiniMap(
-        // Online: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }),
-        L.tileLayer('/tiles/{z}/{x}/{y}.png', { maxZoom: 18, tms: true }),
-        { toggleDisplay: true, minimized: false, position: 'bottomleft', width: 150, height: 150, zoomLevelOffset: -5 }
-    ).addTo(map);
-
-    const markersLayer = L.markerClusterGroup({
-        chunkedLoading: true,
-        maxClusterRadius: 50,
-        disableClusteringAtZoom: 18
-    }).addTo(map);
-    let allObjects = [];
-    let totalCount = 0;
-    const hiddenIds = new Set();
-    const hiddenObjects = {};
+    const markersLayer = window.__markersLayer;
     let fetchController = null;
-
-    // --- Sidebar toggle ---
-    const sidebar = document.getElementById('sidebar');
-    document.getElementById('btn-collapse').addEventListener('click', () => {
-        sidebar.classList.add('collapsed');
-        setTimeout(() => map.invalidateSize(), 350);
-    });
-    document.getElementById('sidebar-toggle').addEventListener('click', () => {
-        sidebar.classList.remove('collapsed');
-        setTimeout(() => map.invalidateSize(), 350);
-    });
 
     // --- Filters ---
     const filterKeys = ['country', 'gov_org', 'type', 'kind', 'association', 'unit'];
@@ -171,7 +134,7 @@
     function loadMarkers() {
         markersLayer.clearLayers();
         if (!hasActiveFilters()) {
-            allObjects = [];
+            window.__allObjects = [];
             updateObjectCount(0);
             return;
         }
@@ -183,21 +146,21 @@
         fetch(MARKERS_URL + '?' + params.toString(), { signal: fetchController.signal })
             .then(r => r.json())
             .then(data => {
-                totalCount = data.total;
-                allObjects = data.objects;
-                renderMarkers();
+                window.__totalCount = data.total;
+                window.__allObjects = data.objects;
+                window.__renderMarkers();
             })
             .catch(e => {
                 if (e.name !== 'AbortError') console.error(e);
             });
     }
 
-    function renderMarkers() {
+    window.__renderMarkers = function() {
         markersLayer.clearLayers();
         const markers = [];
-        allObjects.filter(obj => !hiddenIds.has(obj.id)).forEach(obj => {
+        window.__allObjects.filter(obj => !window.__hiddenIds.has(obj.id)).forEach(obj => {
             const tooltip = obj.name || 'Без названия';
-            const popup = buildPopup(obj);
+            const popup = window.__buildPopup(obj);
 
             if (obj.lat != null && obj.lng != null) {
                 const m = L.marker([obj.lat, obj.lng]);
@@ -214,9 +177,9 @@
         });
         markersLayer.addLayers(markers);
         updateObjectCount(markers.length);
-    }
+    };
 
-    function buildPopup(obj) {
+    window.__buildPopup = function(obj) {
         let html = '<div class="marker-popup">';
         html += '<b>' + esc(obj.name || 'Без названия') + '</b>';
         const fields = [
@@ -234,51 +197,12 @@
         html += '<br><button class="popup-hide-btn" onclick="window._hideObject(' + obj.id + ')">Скрыть</button>';
         html += '</div>';
         return html;
-    }
-
-    // --- Hidden objects ---
-    const hiddenPanel = document.getElementById('hidden-panel');
-    const hiddenList = document.getElementById('hidden-list');
-
-    window._hideObject = function(id) {
-        const obj = allObjects.find(o => o.id === id);
-        if (!obj) return;
-        hiddenIds.add(id);
-        hiddenObjects[id] = obj;
-        map.closePopup();
-        renderMarkers();
-        renderHiddenPanel();
     };
-
-    window._showObject = function(id) {
-        hiddenIds.delete(id);
-        delete hiddenObjects[id];
-        renderMarkers();
-        renderHiddenPanel();
-    };
-
-    function renderHiddenPanel() {
-        if (hiddenIds.size === 0) {
-            hiddenPanel.style.display = 'none';
-            return;
-        }
-        hiddenPanel.style.display = 'block';
-        hiddenList.innerHTML = '';
-        for (const id of hiddenIds) {
-            const obj = hiddenObjects[id];
-            const item = document.createElement('div');
-            item.className = 'hidden-item';
-            item.innerHTML = '<span class="hidden-item-name">' + esc(obj.name || 'Без названия') + '</span>' +
-                '<button class="hidden-item-show" onclick="window._showObject(' + id + ')" title="Показать">&times;</button>';
-            hiddenList.appendChild(item);
-        }
-    }
 
     const objectCountEl = document.getElementById('object-count');
-
     function updateObjectCount(shown) {
         if (shown > 0) {
-            objectCountEl.textContent = '(' + shown + ' из ' + totalCount + ')';
+            objectCountEl.textContent = '(' + shown + ' из ' + window.__totalCount + ')';
         } else {
             objectCountEl.textContent = '';
         }
@@ -332,7 +256,7 @@
                                 (obj.country_name ? '<div class="search-item-sub">' + esc(obj.country_name) + '</div>' : '');
                             div.addEventListener('click', () => {
                                 searchMarkerLayer.clearLayers();
-                                const popup = buildPopup(obj);
+                                const popup = window.__buildPopup(obj);
                                 if (obj.lat != null && obj.lng != null) {
                                     const m = L.marker([obj.lat, obj.lng]).addTo(searchMarkerLayer);
                                     m.bindPopup(popup).openPopup();
@@ -359,78 +283,5 @@
         if (!e.target.closest('#object-search')) {
             searchResults.style.display = 'none';
         }
-    });
-
-    // --- Export ---
-    document.getElementById('btn-export').addEventListener('click', () => {
-        if (allObjects.length === 0) {
-            alert('Нет объектов для экспорта. Выберите фильтры.');
-            return;
-        }
-        const format = document.getElementById('export-format').value;
-        const headers = ['Название', 'Страна', 'Гос. орган', 'Тип сил', 'Вид сил', 'Ассоциация', 'Часть', 'Широта', 'Долгота', 'Описание'];
-        const rows = allObjects.map(o => {
-            let lat = o.lat, lng = o.lng;
-            if (lat == null && lng == null && o.geom) {
-                const bounds = L.geoJSON(JSON.parse(o.geom)).getBounds();
-                const center = bounds.getCenter();
-                lat = center.lat;
-                lng = center.lng;
-            }
-            return [
-                o.name || '', o.country_name || '', o.gov_org_name || '',
-                o.type_name || '', o.kind_name || '', o.association_name || '',
-                o.unit_name || '', lat != null ? lat : '', lng != null ? lng : '',
-                o.description || ''
-            ];
-        });
-
-        fetch(`${LOG_EXPORT_URL}?format=${format}&count=${allObjects.length}`).catch(() => {});
-
-        if (format === 'csv') {
-            const escape = v => '"' + String(v).replace(/"/g, '""') + '"';
-            const csv = '\uFEFF' + [headers.map(escape).join(';')].concat(
-                rows.map(r => r.map(escape).join(';'))
-            ).join('\r\n');
-            downloadFile(csv, 'objects.csv', 'text/csv;charset=utf-8');
-        } else {
-            const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-                '<?mso-application progid="Excel.Sheet"?>\n' +
-                '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n' +
-                ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n' +
-                '<Worksheet ss:Name="Objects"><Table>\n';
-            const xmlFooter = '</Table></Worksheet></Workbook>';
-            const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            let xml = xmlHeader;
-            xml += '<Row>' + headers.map(h => '<Cell><Data ss:Type="String">' + esc(h) + '</Data></Cell>').join('') + '</Row>\n';
-            rows.forEach(r => {
-                xml += '<Row>' + r.map(v => {
-                    const t = (typeof v === 'number') ? 'Number' : 'String';
-                    return '<Cell><Data ss:Type="' + t + '">' + esc(v) + '</Data></Cell>';
-                }).join('') + '</Row>\n';
-            });
-            xml += xmlFooter;
-            downloadFile(xml, 'objects.xls', 'application/vnd.ms-excel');
-        }
-    });
-
-    function downloadFile(content, filename, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    // --- Show all hidden objects ---
-    document.getElementById('btn-show-all').addEventListener('click', () => {
-        hiddenIds.clear();
-        Object.keys(hiddenObjects).forEach(k => delete hiddenObjects[k]);
-        renderMarkers();
-        renderHiddenPanel();
     });
 })();

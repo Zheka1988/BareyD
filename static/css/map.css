@@ -1,5 +1,65 @@
 body { display: flex; height: 100vh; overflow: hidden; }
 
+/* Scale panel */
+.scale-panel {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    min-width: 140px;
+}
+.scale-text {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+}
+.scale-ruler-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.scale-ruler-bar {
+    height: 4px;
+    background: #4a9eff;
+    border-radius: 2px;
+    border-left: 2px solid #4a9eff;
+    border-right: 2px solid #4a9eff;
+    position: relative;
+    min-width: 40px;
+}
+.scale-ruler-bar::before,
+.scale-ruler-bar::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: #4a9eff;
+    top: -3px;
+}
+.scale-ruler-bar::before { left: -2px; }
+.scale-ruler-bar::after { right: -2px; }
+.scale-ruler-label {
+    font-size: 11px;
+    color: #8a8a9a;
+    white-space: nowrap;
+}
+.scale-select {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid #2a2a4a;
+    border-radius: 5px;
+    background: #0f3460;
+    color: #e0e0e0;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+}
+.scale-select:focus { border-color: #4a9eff; }
+
 /* Sidebar */
 #sidebar {
     width: 300px;
