@@ -55,6 +55,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./tiles:/app/tiles:ro
       - static_files:/app/staticfiles:ro
       - media_files:/app/media:ro
     depends_on:

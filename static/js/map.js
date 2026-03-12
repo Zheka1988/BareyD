@@ -12,13 +12,16 @@
     // --- Map ---
     const map = L.map('map').setView([50.0, 30.0], 6);
     window.__map = map;
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Online: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    L.tileLayer('/tiles/{z}/{x}/{y}.png', {
         maxZoom: 18,
+        tms: true,
         attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
     new L.Control.MiniMap(
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }),
+        // Online: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }),
+        L.tileLayer('/tiles/{z}/{x}/{y}.png', { maxZoom: 18, tms: true }),
         { toggleDisplay: true, minimized: false, position: 'bottomleft', width: 150, height: 150, zoomLevelOffset: -5 }
     ).addTo(map);
 

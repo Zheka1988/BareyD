@@ -184,6 +184,33 @@ cd BareyD
 # Далее по инструкции: настроить .env, сгенерировать SSL, docker compose up --build -d
 ```
 
+## Офлайн-режим (работа без интернета)
+
+Все внешние ресурсы перенесены локально. Онлайн-варианты закомментированы в коде.
+
+### Замены
+
+| Файл | Строки | Что заменено | Было (CDN) | Стало (локально) |
+|------|--------|-------------|------------|-----------------|
+| `templates/base.html` | 8-23 | Leaflet CSS/JS, MarkerCluster CSS/JS, MiniMap CSS/JS | `unpkg.com` | `static/vendor/` |
+| `static/js/map.js` | 15-18 | Тайлы карты | `tile.openstreetmap.org` | `/tiles/{z}/{x}/{y}.png` |
+| `static/js/map.js` | 22 | Тайлы мини-карты | `tile.openstreetmap.org` | `/tiles/{z}/{x}/{y}.png` |
+| `static/css/login.css` | 1-2 | Шрифт Inter | `fonts.googleapis.com` | `static/vendor/fonts/` |
+
+### Локальные библиотеки (`static/vendor/`)
+
+| Библиотека | Версия | Файлы |
+|-----------|--------|-------|
+| Leaflet | 1.9.4 | `leaflet.js`, `leaflet.css`, `images/` |
+| Leaflet MarkerCluster | 1.5.3 | `leaflet.markercluster.js`, `MarkerCluster.css`, `MarkerCluster.Default.css` |
+| Leaflet MiniMap | 3.6.1 | `Control.MiniMap.min.js`, `Control.MiniMap.min.css` |
+| Inter (шрифт) | v20 | `inter-{300,400,500,600,700}.ttf` |
+
+### Тайлы карты (`tiles/`)
+
+Офлайн-тайлы в формате TMS (SASPlanet). Структура: `tiles/{z}/{x}/{y}.png`.
+Не входят в git-репозиторий — копировать вручную на сервер.
+
 ## Обновление статики
 
 При изменении JS, CSS или других статических файлов необходимо пересобрать статику внутри контейнера:
