@@ -2,6 +2,17 @@
 .git
 .idea
 __pycache__
+*.pyc
 *.whl
 *.db
 .env
+tiles
+staticfiles
+media
+документация
+*.md
+*.log
+.gitignore
+.dockerignore
+docker-compose.yml
+

@@ -32,9 +32,6 @@
         { label: '1:30 000 000',    value: 30000000,  cm1: '300 км' },
     ];
 
-    // 96 DPI: 1px = 0.264mm, 1cm = ~38px
-    var PX_PER_CM = 38;
-
     // Calculate real scale based on latitude and screen DPI
     function getRealScale() {
         var center = map.getCenter();
@@ -76,16 +73,7 @@
             L.DomEvent.disableClickPropagation(container);
             L.DomEvent.disableScrollPropagation(container);
 
-            // Scale text
-            this._scaleText = L.DomUtil.create('div', 'scale-text', container);
-
-            // Ruler: fixed 1cm bar + label "1 см = X"
-            this._rulerWrap = L.DomUtil.create('div', 'scale-ruler-wrap', container);
-            this._rulerBar = L.DomUtil.create('div', 'scale-ruler-bar', this._rulerWrap);
-            this._rulerBar.style.width = PX_PER_CM + 'px';
-            this._rulerLabel = L.DomUtil.create('span', 'scale-ruler-label', this._rulerWrap);
-
-            // Dropdown
+            // Dropdown only
             this._select = L.DomUtil.create('select', 'scale-select', container);
             for (var i = 0; i < STANDARD_SCALES.length; i++) {
                 var opt = L.DomUtil.create('option', '', this._select);
@@ -107,8 +95,6 @@
             var realScale = getRealScale();
             var nearest = getNearestStandardScale(realScale);
 
-            this._scaleText.textContent = nearest.label;
-            this._rulerLabel.textContent = '1 см = ' + nearest.cm1;
             this._select.value = nearest.value;
         }
     });
